@@ -1,0 +1,2950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Syntax Sync - Educational Synth-Shooter</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Press+Start+2P&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family: 'Chakra Petch', sans-serif;
+    background: #05050f;
+    color: white;
+    overflow: hidden;
+    user-select: none;
+}
+
+button {
+    font: inherit;
+    cursor: pointer;
+}
+
+.font-arcade {
+    font-family: 'Press Start 2P', monospace;
+}
+
+.font-code {
+    font-family: 'Fira Code', monospace;
+}
+
+.scanlines {
+    position: relative;
+}
+
+.scanlines::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+        linear-gradient(
+            rgba(18,16,16,0) 50%,
+            rgba(0,0,0,.25) 50%
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,0,0,.03),
+            rgba(0,255,0,.01),
+            rgba(0,0,255,.03)
+        );
+    background-size: 100% 3px, 6px 100%;
+    pointer-events: none;
+    z-index: 999;
+}
+
+#game-container {
+    position: relative;
+    width: min(1200px, 100%);
+    height: 100%;
+    max-height: 900px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background: rgba(15,23,42,.94);
+    border: 2px solid rgba(0,229,255,.4);
+    border-radius: 18px;
+    box-shadow: 0 0 30px rgba(0,229,255,.2);
+    overflow: hidden;
+}
+
+#hud {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(2,6,23,.88);
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    z-index: 10;
+}
+
+.hud-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.hud-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.hud-label {
+    font-size: 11px;
+    color: #22d3ee;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.hud-value {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 17px;
+    margin-top: 5px;
+}
+
+.score {
+    color: #34d399;
+    text-shadow: 0 0 8px rgba(0,255,170,.8);
+}
+
+.level {
+    color: #c084fc;
+    text-shadow: 0 0 8px rgba(255,0,200,.8);
+}
+
+.divider {
+    width: 1px;
+    height: 34px;
+    background: #1e293b;
+}
+
+.hud-center {
+    text-align: center;
+}
+
+.hud-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 15px;
+    color: #67e8f9;
+    text-shadow: 0 0 12px rgba(0,229,255,.7);
+}
+
+.hud-status {
+    font-size: 10px;
+    color: rgba(103,232,249,.7);
+    font-family: monospace;
+    margin-top: 5px;
+}
+
+.shields-label {
+    color: #fb7185;
+    text-align: right;
+}
+
+#hud-shields {
+    display: flex;
+    gap: 5px;
+    margin-top: 6px;
+    justify-content: flex-end;
+}
+
+.shield-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+    background: #fb7185;
+    box-shadow: 0 0 9px rgba(251,113,133,.8);
+    transform: skew(-12deg);
+}
+
+.shield-dot.empty {
+    background: #1e293b;
+    box-shadow: none;
+}
+
+#audio-btn {
+    padding: 9px 11px;
+    border-radius: 8px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #67e8f9;
+}
+
+#syntax-banner {
+    display: none;
+    position: absolute;
+    top: 85px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 92%;
+    max-width: 760px;
+    z-index: 30;
+    align-items: center;
+    gap: 12px;
+    padding: 11px;
+    background: rgba(15,23,42,.97);
+    border: 2px solid #22d3ee;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,255,200,.3);
+}
+
+#syntax-banner.show {
+    display: flex;
+}
+
+.avatar {
+    width: 62px;
+    height: 62px;
+    flex: 0 0 62px;
+    background: #083344;
+    border: 1px solid #22d3ee;
+    border-radius: 8px;
+}
+
+#syntax-speech {
+    margin: 5px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.syntax-header {
+    border-bottom: 1px solid rgba(8,145,178,.4);
+    padding-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.syntax-header span:first-child {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: #67e8f9;
+}
+
+.syntax-tone {
+    color: #34d399;
+    font-family: monospace;
+    font-size: 9px;
+}
+
+#game-area {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    margin: 8px 0;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 100%, rgba(0,255,170,.08), transparent 35%),
+        #020617;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    background: rgba(2,6,23,.93);
+    backdrop-filter: blur(5px);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.system-ready {
+    font-family: 'Press Start 2P', monospace;
+    color: #22d3ee;
+    font-size: 11px;
+    margin-bottom: 12px;
+    animation: pulse 1.2s infinite;
+}
+
+.logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(28px, 6vw, 60px);
+    color: #34d399;
+    text-shadow:
+        0 0 8px #00ffaa,
+        0 0 25px rgba(0,255,170,.45);
+    margin: 0 0 15px;
+}
+
+.subtitle {
+    max-width: 650px;
+    color: #bae6fd;
+    font-family: 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    margin-bottom: 25px;
+}
+
+.menu-buttons {
+    display: flex;
+    gap: 15px;
+    width: min(500px, 100%);
+    margin-bottom: 25px;
+}
+
+.menu-btn {
+    flex: 1;
+    padding: 15px 12px;
+    border: 0;
+    border-radius: 10px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    transition: .2s;
+}
+
+.menu-btn:hover {
+    transform: translateY(-3px);
+}
+
+.tutorial-btn {
+    color: #021a13;
+    background: linear-gradient(90deg,#14b8a6,#10b981);
+    box-shadow: 0 0 20px rgba(0,255,170,.35);
+}
+
+.survival-btn {
+    color: white;
+    background: linear-gradient(90deg,#0891b2,#2563eb);
+    box-shadow: 0 0 20px rgba(0,229,255,.3);
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 6px;
+    width: min(580px,100%);
+    padding: 8px;
+    background: rgba(15,23,42,.8);
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+}
+
+.control {
+    padding: 10px 5px;
+    background: rgba(2,6,23,.65);
+    border: 1px solid #1e293b;
+    border-radius: 7px;
+}
+
+.control strong {
+    display: block;
+    color: #34d399;
+    font-family: monospace;
+    margin-bottom: 4px;
+}
+
+.control small {
+    color: #94a3b8;
+    font-size: 9px;
+}
+
+.credit {
+    margin-top: 18px;
+    color: #64748b;
+    font-family: monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+.credit span {
+    color: #22d3ee;
+    font-weight: bold;
+}
+
+#powerup-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 20;
+    padding: 7px 12px;
+    border-radius: 20px;
+    background: rgba(245,158,11,.16);
+    border: 1px solid #fbbf24;
+    color: #fcd34d;
+    font: 10px 'Fira Code',monospace;
+}
+
+#mobile-controls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 7px;
+    z-index: 10;
+}
+
+.touch-btn {
+    padding: 11px 5px;
+    color: #67e8f9;
+    background: rgba(30,41,59,.85);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    font-family: 'Press Start 2P',monospace;
+    font-size: 8px;
+}
+
+.touch-fire {
+    color: #022c22;
+    background: linear-gradient(90deg,#059669,#14b8a6);
+    border-color: #34d399;
+}
+
+.touch-btn:active {
+    transform: scale(.97);
+}
+
+.gameover-title {
+    color: #fb7185;
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(25px,5vw,48px);
+    text-shadow: 0 0 15px rgba(255,0,200,.7);
+    margin-bottom: 12px;
+}
+
+.gameover-subtitle {
+    color: #fda4af;
+    font-family: monospace;
+    font-size: 11px;
+    margin-bottom: 20px;
+}
+
+.results {
+    width: min(460px,100%);
+    background: rgba(15,23,42,.95);
+    border: 2px solid rgba(244,63,94,.4);
+    border-radius: 15px;
+    padding: 17px;
+    margin-bottom: 20px;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #1e293b;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.result-row:last-of-type {
+    border-bottom: 0;
+}
+
+.result-label {
+    color: #94a3b8;
+}
+
+.result-value {
+    color: #34d399;
+    font-family: 'Press Start 2P',monospace;
+    font-size: 13px;
+}
+
+.eval-box {
+    margin-top: 10px;
+    text-align: left;
+    padding: 10px;
+    color: #67e8f9;
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 7px;
+    font: italic 10px 'Fira Code',monospace;
+    line-height: 1.5;
+}
+
+.gameover-buttons {
+    display: flex;
+    gap: 10px;
+    width: min(460px,100%);
+}
+
+.retry {
+    flex: 1;
+    padding: 14px;
+    border: 0;
+    border-radius: 9px;
+    background: linear-gradient(90deg,#10b981,#14b8a6);
+    color: #022c22;
+    font-family: 'Press Start 2P',monospace;
+    font-size: 9px;
+}
+
+.menu-return {
+    padding: 14px 20px;
+    border-radius: 9px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    font-family: 'Press Start 2P',monospace;
+    font-size: 9px;
+}
+
+@keyframes pulse {
+    50% { opacity: .65; transform: scale(1.02); }
+}
+
+@media(max-width:700px) {
+    #game-container {
+        border-radius: 0;
+        border-width: 1px;
+        padding: 6px;
+    }
+
+    #hud {
+        padding: 8px;
+    }
+
+    .hud-center {
+        display: none;
+    }
+
+    .hud-value {
+        font-size: 12px;
+    }
+
+    .hud-label {
+        font-size: 8px;
+    }
+
+    .hud-group {
+        gap: 8px;
+    }
+
+    .divider {
+        height: 28px;
+    }
+
+    #syntax-banner {
+        top: 72px;
+    }
+
+    .avatar {
+        width: 45px;
+        height: 45px;
+        flex-basis: 45px;
+    }
+
+    #syntax-speech {
+        font-size: 10px;
+    }
+
+    .syntax-header span:first-child {
+        font-size: 7px;
+    }
+
+    .syntax-tone {
+        display: none;
+    }
+
+    .controls {
+        display: none;
+    }
+
+    .subtitle {
+        font-size: 10px;
+    }
+
+    .menu-buttons {
+        flex-direction: column;
+    }
+
+    .menu-btn {
+        padding: 14px;
+    }
+}
+</style>
+</head>
+
+<body class="scanlines">
+
+<div id="game-container">
+
+    <header id="hud">
+
+        <div class="hud-group">
+
+            <div class="hud-stat">
+                <span class="hud-label">SCORE</span>
+                <span id="hud-score" class="hud-value score">00000</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="hud-stat">
+                <span class="hud-label" style="color:#c084fc;">LEVEL</span>
+                <span id="hud-level" class="hud-value level">1</span>
+            </div>
+
+        </div>
+
+        <div class="hud-center">
+            <div class="hud-title">SYNTAX SYNC</div>
+            <div id="hud-status" class="hud-status">SYSTEM: NOMINAL</div>
+        </div>
+
+        <div class="hud-group">
+
+            <div class="hud-stat">
+                <span class="hud-label shields-label">SHIELDS</span>
+                <div id="hud-shields"></div>
+            </div>
+
+            <button id="audio-btn" title="Toggle sound">🔊</button>
+
+        </div>
+
+    </header>
+
+
+    <div id="syntax-banner">
+
+        <canvas id="syntax-avatar" class="avatar" width="62" height="62"></canvas>
+
+        <div style="flex:1;min-width:0;">
+
+            <div class="syntax-header">
+                <span>SYN-TAX // AI ASSISTANT</span>
+                <span class="syntax-tone">FRIENDLY MODE</span>
+            </div>
+
+            <p id="syntax-speech">
+                Greetings, human coder!
+            </p>
+
+        </div>
+
+        <button id="syntax-dismiss"
+                style="background:none;border:0;color:#94a3b8;font-size:16px;">
+            ✕
+        </button>
+
+    </div>
+
+
+    <main id="game-area">
+
+        <canvas id="gameCanvas">
+            Your browser does not support HTML canvas.
+        </canvas>
+
+        <div id="powerup-badge">
+            <span id="powerup-icon">⏳</span>
+            <span id="powerup-text">TIME DILATOR</span>
+        </div>
+
+
+        <!-- TITLE -->
+
+        <section id="screen-title" class="overlay">
+
+            <div class="system-ready">[ SYSTEM READY ]</div>
+
+            <h1 class="logo">SYNTAX SYNC</h1>
+
+            <p class="subtitle">
+                Defend the mainframe baseline! Patch missing Python
+                code loops, variables, operators and colons before
+                syntax bugs crash the cloud server.
+            </p>
+
+            <div class="menu-buttons">
+
+                <button id="btn-tutorial"
+                        class="menu-btn tutorial-btn">
+                    PLAY TUTORIAL
+                </button>
+
+                <button id="btn-survival"
+                        class="menu-btn survival-btn">
+                    SURVIVAL WAVE
+                </button>
+
+            </div>
+
+            <div class="controls">
+
+                <div class="control">
+                    <strong>A / D</strong>
+                    <small>SLIDE CURSOR</small>
+                </div>
+
+                <div class="control">
+                    <strong>W / SPACE</strong>
+                    <small>FIRE PATCH</small>
+                </div>
+
+                <div class="control">
+                    <strong>3 BLASTERS</strong>
+                    <small>in &nbsp; | &nbsp; : &nbsp; | &nbsp; =</small>
+                </div>
+
+            </div>
+
+            <div class="credit">
+                DEVELOPED BY
+                <span>IBRAHIM ATIF KHAN</span>
+            </div>
+
+        </section>
+
+
+        <!-- GAME OVER -->
+
+        <section id="screen-gameover" class="overlay hidden">
+
+            <div class="gameover-title">GAME OVER</div>
+
+            <div class="gameover-subtitle">
+                MAINFRAME DEFENSES BREACHED BY CODE BUGS!
+            </div>
+
+            <div class="results">
+
+                <div class="result-row">
+                    <span class="result-label">FINAL SCORE</span>
+                    <span id="go-score" class="result-value">0</span>
+                </div>
+
+                <div class="result-row">
+                    <span class="result-label">HIGHEST LEVEL</span>
+                    <span id="go-level" class="result-value">1</span>
+                </div>
+
+                <div class="result-row">
+                    <span class="result-label">BUGS FIXED</span>
+                    <span id="go-fixed" class="result-value">0</span>
+                </div>
+
+                <div class="eval-box">
+                    <div style="color:#64748b;margin-bottom:5px;">
+                        SYN-TAX PERFORMANCE REPORT:
+                    </div>
+                    <span id="go-eval">
+                        Great effort! You're building solid Python
+                        muscle memory!
+                    </span>
+                </div>
+
+            </div>
+
+            <div class="gameover-buttons">
+
+                <button id="btn-restart" class="retry">
+                    RETRY WAVE
+                </button>
+
+                <button id="btn-menu" class="menu-return">
+                    MENU
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer id="mobile-controls">
+
+        <button id="touch-left" class="touch-btn">
+            ◀ LEFT
+            <small>(A)</small>
+        </button>
+
+        <button id="touch-fire" class="touch-btn touch-fire">
+            FIRE PATCH
+            <small>(SPACE)</small>
+        </button>
+
+        <button id="touch-right" class="touch-btn">
+            RIGHT ▶
+            <small>(D)</small>
+        </button>
+
+    </footer>
+
+</div>
+
+
+<script>
+/* =========================================================
+   SYNTAX SYNC
+   Complete Educational Synth-Shooter
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
+   SOUND ENGINE
+   --------------------------------------------------------- */
+
+class SoundEngine {
+
+    constructor() {
+        this.ctx = null;
+        this.enabled = true;
+    }
+
+    init() {
+
+        if (!this.enabled) return;
+
+        if (!this.ctx) {
+
+            const AudioContext =
+                window.AudioContext ||
+                window.webkitAudioContext;
+
+            if (!AudioContext) return;
+
+            this.ctx = new AudioContext();
+        }
+
+        if (this.ctx.state === "suspended") {
+            this.ctx.resume();
+        }
+    }
+
+    tone(type, frequency, duration, volume = 0.1, endFrequency = null) {
+
+        if (!this.enabled || !this.ctx) return;
+
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = type;
+
+        osc.frequency.setValueAtTime(frequency, now);
+
+        if (endFrequency) {
+            osc.frequency.exponentialRampToValueAtTime(
+                Math.max(20, endFrequency),
+                now + duration
+            );
+        }
+
+        gain.gain.setValueAtTime(volume, now);
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            now + duration
+        );
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration);
+    }
+
+    playLaser() {
+        this.tone("sawtooth", 800, .12, .12, 150);
+    }
+
+    playExplosion() {
+        this.tone("triangle", 120, .25, .2, 30);
+    }
+
+    playSuccess() {
+
+        if (!this.enabled || !this.ctx) return;
+
+        [523.25,659.25,783.99,1046.50]
+            .forEach((freq, index) => {
+
+                setTimeout(() => {
+                    this.tone("sine", freq, .12, .13);
+                }, index * 50);
+
+            });
+    }
+
+    playHit() {
+        this.tone("square", 90, .18, .18, 45);
+    }
+
+    playPowerup() {
+
+        [440,660,880,1320].forEach((freq,index) => {
+
+            setTimeout(() => {
+                this.tone("sine",freq,.12,.1);
+            }, index * 60);
+
+        });
+    }
+}
+
+const sound = new SoundEngine();
+
+
+/* ---------------------------------------------------------
+   DOM
+   --------------------------------------------------------- */
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const gameArea = document.getElementById("game-area");
+
+const titleScreen = document.getElementById("screen-title");
+const gameOverScreen = document.getElementById("screen-gameover");
+
+const scoreEl = document.getElementById("hud-score");
+const levelEl = document.getElementById("hud-level");
+const statusEl = document.getElementById("hud-status");
+const shieldsEl = document.getElementById("hud-shields");
+
+const powerupBadge = document.getElementById("powerup-badge");
+const powerupText = document.getElementById("powerup-text");
+const powerupIcon = document.getElementById("powerup-icon");
+
+const syntaxBanner = document.getElementById("syntax-banner");
+const syntaxSpeech = document.getElementById("syntax-speech");
+
+const avatarCanvas = document.getElementById("syntax-avatar");
+const avatarCtx = avatarCanvas.getContext("2d");
+
+const audioBtn = document.getElementById("audio-btn");
+
+
+/* ---------------------------------------------------------
+   CANVAS RESIZE
+   --------------------------------------------------------- */
+
+let W = 900;
+let H = 600;
+
+function resizeCanvas() {
+
+    const rect = gameArea.getBoundingClientRect();
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    W = Math.max(320, rect.width);
+    H = Math.max(300, rect.height);
+
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+
+/* ---------------------------------------------------------
+   GAME STATE
+   --------------------------------------------------------- */
+
+const state = {
+
+    running: false,
+
+    mode: "survival",
+
+    score: 0,
+
+    level: 1,
+
+    fixed: 0,
+
+    shields: 3,
+
+    maxShields: 3,
+
+    spawnTimer: 0,
+
+    spawnDelay: 1.4,
+
+    elapsed: 0,
+
+    lastTime: 0,
+
+    shake: 0,
+
+    combo: 0,
+
+    comboTimer: 0,
+
+    tutorialStep: 0,
+
+    powerup: null,
+
+    powerupTimer: 0,
+
+    waveKills: 0,
+
+    stars: [],
+
+    particles: [],
+
+    bullets: [],
+
+    enemies: [],
+
+    powerups: []
+
+};
+
+
+/* ---------------------------------------------------------
+   PLAYER
+   --------------------------------------------------------- */
+
+const player = {
+
+    x: 0,
+
+    y: 0,
+
+    width: 48,
+
+    height: 30,
+
+    speed: 470,
+
+    cooldown: 0,
+
+    fireDelay: .18,
+
+    invincible: 0,
+
+    movingLeft: false,
+
+    movingRight: false
+
+};
+
+
+/* ---------------------------------------------------------
+   PYTHON QUESTIONS
+   --------------------------------------------------------- */
+
+const questions = [
+
+    {
+        code: [
+            "for i ___ range(5):",
+            "    print(i)"
+        ],
+        answer: "in",
+        options: ["in", "is", "=", ":"],
+        explanation: "Python uses 'in' to iterate through a range."
+    },
+
+    {
+        code: [
+            "if score ___ 100:",
+            "    print('WIN')"
+        ],
+        answer: ">=",
+        options: ["=", ">=", "in", ":"],
+        explanation: "Use >= when the value can be 100 or higher."
+    },
+
+    {
+        code: [
+            "name ___ 'Alex'",
+            "print(name)"
+        ],
+        answer: "=",
+        options: ["=", "in", ":", "=="],
+        explanation: "A single = assigns a value to a variable."
+    },
+
+    {
+        code: [
+            "while running___",
+            "    update()"
+        ],
+        answer: ":",
+        options: [":", "=", "in", "=="],
+        explanation: "Python blocks begin with a colon."
+    },
+
+    {
+        code: [
+            "for item in items___",
+            "    print(item)"
+        ],
+        answer: ":",
+        options: ["=", ":", "==", "in"],
+        explanation: "The for statement needs a colon before its block."
+    },
+
+    {
+        code: [
+            "if player.health ___ 0:",
+            "    game_over()"
+        ],
+        answer: "<=",
+        options: ["=", "<=", "in", ":"],
+        explanation: "The <= operator means less than or equal to."
+    },
+
+    {
+        code: [
+            "x ___ x + 1",
+            "print(x)"
+        ],
+        answer: "=",
+        options: ["=", "==", ":", "in"],
+        explanation: "Assignment uses the single equals sign."
+    },
+
+    {
+        code: [
+            "if name ___ 'Sam':",
+            "    greet()"
+        ],
+        answer: "==",
+        options: ["=", "==", "in", ":"],
+        explanation: "== compares two values."
+    },
+
+    {
+        code: [
+            "for n ___ numbers:",
+            "    total += n"
+        ],
+        answer: "in",
+        options: ["in", "=", "==", ":"],
+        explanation: "Use 'in' to loop through a collection."
+    },
+
+    {
+        code: [
+            "def attack()___",
+            "    fire()"
+        ],
+        answer: ":",
+        options: [":", "=", "==", "in"],
+        explanation: "Function definitions require a colon."
+    }
+
+];
+
+
+/* ---------------------------------------------------------
+   UTILS
+   --------------------------------------------------------- */
+
+function random(min,max) {
+    return Math.random() * (max-min) + min;
+}
+
+function randomInt(min,max) {
+    return Math.floor(random(min,max+1));
+}
+
+function clamp(value,min,max) {
+    return Math.max(min,Math.min(max,value));
+}
+
+function distance(a,b) {
+    return Math.hypot(a.x-b.x,a.y-b.y);
+}
+
+
+/* ---------------------------------------------------------
+   STARS
+   --------------------------------------------------------- */
+
+function createStars() {
+
+    state.stars = [];
+
+    for (let i=0;i<100;i++) {
+
+        state.stars.push({
+            x: Math.random()*W,
+            y: Math.random()*H,
+            size: random(.5,2),
+            speed: random(10,45),
+            alpha: random(.2,.9)
+        });
+
+    }
+}
+
+
+/* ---------------------------------------------------------
+   PARTICLES
+   --------------------------------------------------------- */
+
+function burst(x,y,color,count=15) {
+
+    for (let i=0;i<count;i++) {
+
+        const angle = random(0,Math.PI*2);
+        const speed = random(50,220);
+
+        state.particles.push({
+
+            x,
+            y,
+
+            vx: Math.cos(angle)*speed,
+            vy: Math.sin(angle)*speed,
+
+            life: random(.3,.8),
+            maxLife: .8,
+
+            size: random(2,5),
+
+            color
+        });
+
+    }
+}
+
+
+/* ---------------------------------------------------------
+   SHIELDS HUD
+   --------------------------------------------------------- */
+
+function updateShields() {
+
+    shieldsEl.innerHTML = "";
+
+    for (let i=0;i<state.maxShields;i++) {
+
+        const dot = document.createElement("div");
+
+        dot.className =
+            "shield-dot" +
+            (i >= state.shields ? " empty" : "");
+
+        shieldsEl.appendChild(dot);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   SCORE
+   --------------------------------------------------------- */
+
+function updateHUD() {
+
+    scoreEl.textContent =
+        String(state.score).padStart(5,"0");
+
+    levelEl.textContent = state.level;
+
+    updateShields();
+
+    if (state.powerup) {
+
+        powerupBadge.style.display = "block";
+
+        if (state.powerup === "slow") {
+            powerupIcon.textContent = "⏳";
+            powerupText.textContent =
+                "TIME DILATOR " +
+                Math.ceil(state.powerupTimer) + "s";
+        }
+
+        if (state.powerup === "rapid") {
+            powerupIcon.textContent = "⚡";
+            powerupText.textContent =
+                "RAPID FIRE " +
+                Math.ceil(state.powerupTimer) + "s";
+        }
+
+        if (state.powerup === "shield") {
+            powerupIcon.textContent = "🛡️";
+            powerupText.textContent =
+                "SHIELD BOOST";
+        }
+
+    } else {
+
+        powerupBadge.style.display = "none";
+    }
+}
+
+
+/* ---------------------------------------------------------
+   SYN-TAX AVATAR
+   --------------------------------------------------------- */
+
+let avatarTime = 0;
+
+function drawAvatar(dt) {
+
+    avatarTime += dt;
+
+    const c = avatarCanvas;
+    const a = avatarCtx;
+
+    a.clearRect(0,0,c.width,c.height);
+
+    a.fillStyle = "#06202c";
+    a.fillRect(0,0,c.width,c.height);
+
+    const bob = Math.sin(avatarTime*3)*2;
+
+    a.save();
+
+    a.translate(31,31+bob);
+
+    // glow
+    a.shadowBlur = 10;
+    a.shadowColor = "#22d3ee";
+
+    // body
+    a.fillStyle = "#0891b2";
+    a.fillRect(-20, -14, 40, 28);
+
+    a.shadowBlur = 0;
+
+    // face
+    a.fillStyle = "#020617";
+    a.fillRect(-14,-9,28,17);
+
+    // eyes
+    a.fillStyle = "#34d399";
+    a.fillRect(-9,-5,6,6);
+    a.fillRect(3,-5,6,6);
+
+    // antenna
+    a.strokeStyle = "#67e8f9";
+    a.lineWidth = 2;
+
+    a.beginPath();
+    a.moveTo(0,-14);
+    a.lineTo(0,-21);
+    a.stroke();
+
+    a.fillStyle = "#facc15";
+    a.beginPath();
+    a.arc(0,-23,3,0,Math.PI*2);
+    a.fill();
+
+    // mouth
+    a.fillStyle = "#22d3ee";
+    a.fillRect(-8,6,16,3);
+
+    a.restore();
+}
+
+
+/* ---------------------------------------------------------
+   SYNTAX SPEECH
+   --------------------------------------------------------- */
+
+function speak(text,duration=3500) {
+
+    syntaxSpeech.textContent = text;
+
+    syntaxBanner.classList.add("show");
+
+    clearTimeout(speak.timer);
+
+    speak.timer = setTimeout(() => {
+
+        if (!state.running) return;
+
+        syntaxBanner.classList.remove("show");
+
+    },duration);
+}
+
+
+/* ---------------------------------------------------------
+   QUESTION ENEMY
+   --------------------------------------------------------- */
+
+function spawnEnemy() {
+
+    const q =
+        questions[randomInt(0,questions.length-1)];
+
+    const lanePadding = 80;
+
+    state.enemies.push({
+
+        x: random(lanePadding,W-lanePadding),
+
+        y: -70,
+
+        width: Math.min(270,W-30),
+
+        height: 88,
+
+        // Comfortable falling speed; spawning is gated so bugs never stack.
+        speed:
+            random(24,32) +
+            Math.min(state.level*1.5,9),
+
+        question: q,
+
+        answer: q.answer,
+
+        pulse: random(0,Math.PI*2),
+
+        hp: 1,
+
+        color:
+            ["#22d3ee","#a78bfa","#34d399","#f472b6"]
+            [randomInt(0,3)]
+
+    });
+
+}
+
+
+/* ---------------------------------------------------------
+   POWERUP
+   --------------------------------------------------------- */
+
+function spawnPowerup(x,y) {
+
+    const types = ["slow","rapid","shield"];
+
+    state.powerups.push({
+
+        x,
+        y,
+
+        type:
+            types[randomInt(0,types.length-1)],
+
+        size: 18,
+
+        vy: 35,
+
+        rotation: 0
+    });
+
+}
+
+
+/* ---------------------------------------------------------
+   SHOOT
+   --------------------------------------------------------- */
+
+function fire() {
+
+    if (!state.running) return;
+
+    if (player.cooldown > 0) return;
+
+    player.cooldown =
+        state.powerup === "rapid"
+            ? .075
+            : player.fireDelay;
+
+    state.bullets.push({
+
+        x: player.x,
+
+        y: player.y-22,
+
+        vx: 0,
+
+        vy: -680,
+
+        width: 4,
+
+        height: 15,
+
+        color:
+            state.powerup === "rapid"
+                ? "#facc15"
+                : "#34d399"
+
+    });
+
+    sound.playLaser();
+}
+
+
+/* ---------------------------------------------------------
+   HIT PLAYER
+   --------------------------------------------------------- */
+
+function damagePlayer() {
+
+    if (player.invincible > 0) return;
+
+    if (state.powerup === "shield") {
+
+        state.powerup = null;
+
+        burst(player.x,player.y,"#38bdf8",25);
+
+        sound.playSuccess();
+
+        speak("Your shield absorbed the attack! Keep patching those bugs!");
+
+        return;
+    }
+
+    state.shields--;
+
+    player.invincible = 1.5;
+
+    state.shake = .35;
+
+    state.combo = 0;
+
+    sound.playHit();
+
+    burst(player.x,player.y,"#fb7185",25);
+
+    updateShields();
+
+    if (state.shields <= 0) {
+        endGame();
+    }
+}
+
+
+/* ---------------------------------------------------------
+   CORRECT ANSWER
+   --------------------------------------------------------- */
+
+function correctEnemy(enemy,index) {
+
+    state.score += 100 + state.level*25;
+
+    state.fixed++;
+
+    state.combo++;
+
+    state.comboTimer = 3;
+
+    state.waveKills++;
+
+    burst(enemy.x,enemy.y,enemy.color,28);
+
+    sound.playSuccess();
+
+    if (state.combo >= 3) {
+
+        state.score += state.combo*25;
+
+    }
+
+    if (Math.random() < .12) {
+
+        spawnPowerup(enemy.x,enemy.y);
+
+    }
+
+    state.enemies.splice(index,1);
+
+    if (
+        state.waveKills >=
+        6 + state.level*2
+    ) {
+
+        levelUp();
+    }
+
+    updateHUD();
+}
+
+
+/* ---------------------------------------------------------
+   WRONG ANSWER / BUG PASSED
+   --------------------------------------------------------- */
+
+function enemyReachedBottom(index) {
+
+    const enemy = state.enemies[index];
+
+    burst(enemy.x,H-40,"#fb7185",20);
+
+    state.enemies.splice(index,1);
+
+    damagePlayer();
+}
+
+
+/* ---------------------------------------------------------
+   LEVEL UP
+   --------------------------------------------------------- */
+
+function levelUp() {
+
+    state.level++;
+
+    state.waveKills = 0;
+
+    // Keep a generous pause between questions at every level.
+    state.spawnDelay = 2.0;
+
+    state.score += 500;
+
+    sound.playSuccess();
+
+    speak(
+        "Level " + state.level +
+        " unlocked! The syntax bugs are getting faster.",
+        3000
+    );
+
+    statusEl.textContent =
+        "SYSTEM: LEVEL " + state.level + " ACTIVE";
+
+    updateHUD();
+}
+
+
+/* ---------------------------------------------------------
+   POWERUP COLLECTION
+   --------------------------------------------------------- */
+
+function collectPowerup(power,index) {
+
+    state.powerups.splice(index,1);
+
+    state.powerup = power.type;
+
+    if (power.type === "slow") {
+        state.powerupTimer = 7;
+        speak("Time Dilator online! Bugs are moving slower.");
+    }
+
+    if (power.type === "rapid") {
+        state.powerupTimer = 6;
+        speak("Rapid-fire patch protocol activated!");
+    }
+
+    if (power.type === "shield") {
+
+        state.powerupTimer = 7;
+
+        state.shields =
+            Math.min(
+                state.maxShields,
+                state.shields+1
+            );
+
+        speak("Emergency shield restored!");
+    }
+
+    burst(power.x,power.y,"#facc15",25);
+
+    sound.playPowerup();
+
+    updateHUD();
+}
+
+
+/* ---------------------------------------------------------
+   UPDATE
+   --------------------------------------------------------- */
+
+function update(dt) {
+
+    if (!state.running) return;
+
+    state.elapsed += dt;
+
+    /* Player */
+
+    if (player.movingLeft) {
+        player.x -= player.speed*dt;
+    }
+
+    if (player.movingRight) {
+        player.x += player.speed*dt;
+    }
+
+    player.x =
+        clamp(
+            player.x,
+            35,
+            W-35
+        );
+
+    if (player.cooldown > 0) {
+        player.cooldown -= dt;
+    }
+
+    if (player.invincible > 0) {
+        player.invincible -= dt;
+    }
+
+    /* Combo */
+
+    if (state.comboTimer > 0) {
+        state.comboTimer -= dt;
+    } else {
+        state.combo = 0;
+    }
+
+    /* Powerup */
+
+    if (state.powerupTimer > 0) {
+
+        state.powerupTimer -= dt;
+
+        if (state.powerupTimer <= 0) {
+            state.powerup = null;
+        }
+    }
+
+    /* Stars */
+
+    const starSpeed =
+        state.powerup === "slow"
+            ? .35
+            : 1;
+
+    for (const star of state.stars) {
+
+        star.y += star.speed*dt*starSpeed;
+
+        if (star.y > H) {
+
+            star.y = 0;
+            star.x = Math.random()*W;
+
+        }
+    }
+
+    /* Spawn */
+
+    state.spawnTimer -= dt;
+
+    if (state.spawnTimer <= 0 && state.enemies.length === 0) {
+
+        spawnEnemy();
+
+        // This timer is reset when the current bug is gone, so bugs never overlap.
+        state.spawnTimer = state.spawnDelay * random(.9,1.1);
+    }
+
+    /* Bullets */
+
+    for (let i=state.bullets.length-1;i>=0;i--) {
+
+        const b = state.bullets[i];
+
+        b.x += b.vx*dt;
+        b.y += b.vy*dt;
+
+        if (b.y < -30) {
+            state.bullets.splice(i,1);
+            continue;
+        }
+
+        let destroyed = false;
+
+        for (let j=state.enemies.length-1;j>=0;j--) {
+
+            const e = state.enemies[j];
+
+            if (
+                b.x > e.x-e.width/2 &&
+                b.x < e.x+e.width/2 &&
+                b.y > e.y-e.height/2 &&
+                b.y < e.y+e.height/2
+            ) {
+
+                const answer =
+                    e.answer;
+
+                /*
+                 * The player selects an answer by shooting
+                 * the corresponding colored answer lane.
+                 *
+                 * Three/four virtual lanes are calculated
+                 * from the question options.
+                 */
+
+                const optionCount =
+                    e.question.options.length;
+
+                const optionIndex =
+                    Math.floor(
+                        ((b.x -
+                        (e.x-e.width/2)) /
+                        e.width) *
+                        optionCount
+                    );
+
+                const clampedIndex =
+                    clamp(
+                        optionIndex,
+                        0,
+                        optionCount-1
+                    );
+
+                const selected =
+                    e.question.options[clampedIndex];
+
+                if (selected === answer) {
+
+                    correctEnemy(e,j);
+
+                } else {
+
+                    state.score =
+                        Math.max(0,state.score-15);
+
+                    state.combo = 0;
+
+                    burst(
+                        b.x,
+                        b.y,
+                        "#fb7185",
+                        10
+                    );
+
+                    speak(
+                        "Not quite! " +
+                        e.question.explanation,
+                        2400
+                    );
+
+                    e.y += 18;
+
+                }
+
+                state.bullets.splice(i,1);
+
+                destroyed = true;
+
+                break;
+            }
+        }
+
+        if (destroyed) continue;
+    }
+
+    /* Enemies */
+
+    const enemySlow =
+        state.powerup === "slow"
+            ? .4
+            : 1;
+
+    for (let i=state.enemies.length-1;i>=0;i--) {
+
+        const e = state.enemies[i];
+
+        e.y +=
+            e.speed *
+            enemySlow *
+            dt;
+
+        e.pulse += dt*3;
+
+        /* Collision with player */
+
+        if (
+            e.y+e.height/2 >
+            player.y-player.height/2 &&
+            e.y-e.height/2 <
+            player.y+player.height/2 &&
+            Math.abs(e.x-player.x) <
+            (e.width+player.width)/2
+        ) {
+
+            state.enemies.splice(i,1);
+
+            damagePlayer();
+
+            continue;
+        }
+
+        if (e.y-e.height/2 > H) {
+
+            enemyReachedBottom(i);
+        }
+    }
+
+    /* Powerups */
+
+    for (let i=state.powerups.length-1;i>=0;i--) {
+
+        const p = state.powerups[i];
+
+        p.y += p.vy*dt;
+        p.rotation += dt*3;
+
+        if (
+            Math.hypot(
+                p.x-player.x,
+                p.y-player.y
+            ) < 40
+        ) {
+
+            collectPowerup(p,i);
+
+            continue;
+        }
+
+        if (p.y > H+30) {
+
+            state.powerups.splice(i,1);
+        }
+    }
+
+    /* Particles */
+
+    for (let i=state.particles.length-1;i>=0;i--) {
+
+        const p = state.particles[i];
+
+        p.x += p.vx*dt;
+        p.y += p.vy*dt;
+
+        p.vx *= .98;
+        p.vy *= .98;
+
+        p.life -= dt;
+
+        if (p.life <= 0) {
+            state.particles.splice(i,1);
+        }
+    }
+
+    if (state.shake > 0) {
+        state.shake -= dt;
+    }
+
+    updateHUD();
+}
+
+
+/* ---------------------------------------------------------
+   DRAW BACKGROUND
+   --------------------------------------------------------- */
+
+function drawBackground() {
+
+    const gradient =
+        ctx.createLinearGradient(0,0,0,H);
+
+    gradient.addColorStop(0,"#020617");
+    gradient.addColorStop(.55,"#03071b");
+    gradient.addColorStop(1,"#04151d");
+
+    ctx.fillStyle = gradient;
+
+    ctx.fillRect(0,0,W,H);
+
+    /* grid */
+
+    ctx.strokeStyle =
+        "rgba(34,211,238,.055)";
+
+    ctx.lineWidth = 1;
+
+    const gridSize = 45;
+
+    for (let x=0;x<W;x+=gridSize) {
+
+        ctx.beginPath();
+        ctx.moveTo(x,0);
+        ctx.lineTo(x,H);
+        ctx.stroke();
+
+    }
+
+    for (let y=0;y<H;y+=gridSize) {
+
+        ctx.beginPath();
+        ctx.moveTo(0,y);
+        ctx.lineTo(W,y);
+        ctx.stroke();
+
+    }
+
+    /* stars */
+
+    for (const star of state.stars) {
+
+        ctx.globalAlpha = star.alpha;
+
+        ctx.fillStyle = "#67e8f9";
+
+        ctx.fillRect(
+            star.x,
+            star.y,
+            star.size,
+            star.size
+        );
+    }
+
+    ctx.globalAlpha = 1;
+
+    /* horizon */
+
+    const horizon =
+        ctx.createLinearGradient(
+            0,H*.65,
+            0,H
+        );
+
+    horizon.addColorStop(
+        0,
+        "rgba(0,255,170,0)"
+    );
+
+    horizon.addColorStop(
+        1,
+        "rgba(0,255,170,.08)"
+    );
+
+    ctx.fillStyle = horizon;
+
+    ctx.fillRect(
+        0,
+        H*.65,
+        W,
+        H*.35
+    );
+}
+
+
+/* ---------------------------------------------------------
+   DRAW PLAYER
+   --------------------------------------------------------- */
+
+function drawPlayer() {
+
+    if (
+        player.invincible > 0 &&
+        Math.floor(player.invincible*10)%2===0
+    ) {
+        return;
+    }
+
+    ctx.save();
+
+    ctx.translate(player.x,player.y);
+
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = "#34d399";
+
+    /* ship */
+
+    ctx.fillStyle = "#10b981";
+
+    ctx.beginPath();
+
+    ctx.moveTo(0,-22);
+    ctx.lineTo(25,17);
+    ctx.lineTo(10,12);
+    ctx.lineTo(0,19);
+    ctx.lineTo(-10,12);
+    ctx.lineTo(-25,17);
+
+    ctx.closePath();
+
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+    /* cockpit */
+
+    ctx.fillStyle = "#67e8f9";
+
+    ctx.beginPath();
+
+    ctx.moveTo(0,-12);
+    ctx.lineTo(8,5);
+    ctx.lineTo(-8,5);
+    ctx.closePath();
+
+    ctx.fill();
+
+    /* engine */
+
+    ctx.fillStyle = "#facc15";
+
+    ctx.fillRect(-5,15,10,8);
+
+    ctx.restore();
+
+    /* shield ring */
+
+    if (state.powerup === "shield") {
+
+        ctx.strokeStyle =
+            "rgba(56,189,248,.75)";
+
+        ctx.lineWidth = 3;
+
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#38bdf8";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            player.x,
+            player.y,
+            35,
+            0,
+            Math.PI*2
+        );
+
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+    }
+}
+
+
+/* ---------------------------------------------------------
+   DRAW BULLETS
+   --------------------------------------------------------- */
+
+function drawBullets() {
+
+    for (const b of state.bullets) {
+
+        ctx.save();
+
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = b.color;
+
+        ctx.fillStyle = b.color;
+
+        ctx.fillRect(
+            b.x-b.width/2,
+            b.y-b.height/2,
+            b.width,
+            b.height
+        );
+
+        ctx.restore();
+    }
+}
+
+
+/* ---------------------------------------------------------
+   DRAW ENEMY
+   --------------------------------------------------------- */
+
+function drawEnemy(enemy) {
+
+    const x = enemy.x;
+    const y = enemy.y;
+
+    const w = enemy.width;
+    const h = enemy.height;
+
+    const pulse =
+        Math.sin(enemy.pulse)*2;
+
+    ctx.save();
+
+    ctx.translate(x,y);
+
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = enemy.color;
+
+    /* main card */
+
+    ctx.fillStyle = "#0f172a";
+
+    ctx.strokeStyle = enemy.color;
+
+    ctx.lineWidth = 2;
+
+    roundRect(
+        ctx,
+        -w/2,
+        -h/2,
+        w,
+        h,
+        10
+    );
+
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+
+    /* bug icon */
+
+    ctx.fillStyle = enemy.color;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        -27,
+        8+pulse,
+        0,
+        Math.PI*2
+    );
+
+    ctx.fill();
+
+    /* code */
+
+    ctx.textAlign = "center";
+
+    ctx.textBaseline = "middle";
+
+    ctx.font =
+        "700 12px 'Fira Code', monospace";
+
+    ctx.fillStyle = "#e2e8f0";
+
+    enemy.question.code.forEach(
+        (line,index) => {
+
+            ctx.fillText(
+                line,
+                0,
+                -8+index*15
+            );
+
+        }
+    );
+
+    /* options */
+
+    const options =
+        enemy.question.options;
+
+    const optionWidth =
+        w/options.length;
+
+    options.forEach((option,index) => {
+
+        const ox =
+            -w/2 +
+            optionWidth*index +
+            optionWidth/2;
+
+        const oy = h/2-14;
+
+        ctx.fillStyle =
+            index%2===0
+                ? "#0c4a6e"
+                : "#312e81";
+
+        ctx.fillRect(
+            ox-optionWidth/2+3,
+            oy-9,
+            optionWidth-6,
+            18
+        );
+
+        ctx.fillStyle = "#e0f2fe";
+
+        ctx.font =
+            "700 11px 'Fira Code', monospace";
+
+        ctx.fillText(
+            option,
+            ox,
+            oy
+        );
+
+    });
+
+    ctx.restore();
+}
+
+
+/* ---------------------------------------------------------
+   DRAW POWERUPS
+   --------------------------------------------------------- */
+
+function drawPowerups() {
+
+    for (const p of state.powerups) {
+
+        const colors = {
+
+            slow: "#f59e0b",
+            rapid: "#facc15",
+            shield: "#38bdf8"
+
+        };
+
+        const icons = {
+
+            slow: "⏳",
+            rapid: "⚡",
+            shield: "◆"
+
+        };
+
+        ctx.save();
+
+        ctx.translate(p.x,p.y);
+
+        ctx.rotate(p.rotation);
+
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = colors[p.type];
+
+        ctx.fillStyle = colors[p.type];
+
+        ctx.beginPath();
+
+        ctx.moveTo(0,-p.size);
+        ctx.lineTo(p.size,0);
+        ctx.lineTo(0,p.size);
+        ctx.lineTo(-p.size,0);
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+
+        ctx.rotate(-p.rotation);
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.font = "bold 13px sans-serif";
+
+        ctx.fillStyle = "#020617";
+
+        ctx.fillText(
+            icons[p.type],
+            0,
+            0
+        );
+
+        ctx.restore();
+    }
+}
+
+
+/* ---------------------------------------------------------
+   DRAW PARTICLES
+   --------------------------------------------------------- */
+
+function drawParticles() {
+
+    for (const p of state.particles) {
+
+        ctx.globalAlpha =
+            Math.max(0,p.life/p.maxLife);
+
+        ctx.fillStyle = p.color;
+
+        ctx.fillRect(
+            p.x,
+            p.y,
+            p.size,
+            p.size
+        );
+    }
+
+    ctx.globalAlpha = 1;
+}
+
+
+/* ---------------------------------------------------------
+   ROUNDED RECT
+   --------------------------------------------------------- */
+
+function roundRect(
+    context,
+    x,
+    y,
+    width,
+    height,
+    radius
+) {
+
+    context.beginPath();
+
+    context.moveTo(x+radius,y);
+
+    context.lineTo(x+width-radius,y);
+
+    context.quadraticCurveTo(
+        x+width,y,
+        x+width,y+radius
+    );
+
+    context.lineTo(
+        x+width,
+        y+height-radius
+    );
+
+    context.quadraticCurveTo(
+        x+width,
+        y+height,
+        x+width-radius,
+        y+height
+    );
+
+    context.lineTo(
+        x+radius,
+        y+height
+    );
+
+    context.quadraticCurveTo(
+        x,
+        y+height,
+        x,
+        y+height-radius
+    );
+
+    context.lineTo(x,y+radius);
+
+    context.quadraticCurveTo(
+        x,
+        y,
+        x+radius,
+        y
+    );
+
+    context.closePath();
+}
+
+
+/* ---------------------------------------------------------
+   DRAW
+   --------------------------------------------------------- */
+
+function draw() {
+
+    ctx.save();
+
+    if (state.shake > 0) {
+
+        ctx.translate(
+            random(-5,5),
+            random(-3,3)
+        );
+    }
+
+    drawBackground();
+
+    drawPowerups();
+
+    for (const enemy of state.enemies) {
+        drawEnemy(enemy);
+    }
+
+    drawBullets();
+
+    drawPlayer();
+
+    drawParticles();
+
+    ctx.restore();
+
+    drawAvatar(1/60);
+}
+
+
+/* ---------------------------------------------------------
+   GAME LOOP
+   --------------------------------------------------------- */
+
+function gameLoop(timestamp) {
+
+    if (!state.lastTime) {
+        state.lastTime = timestamp;
+    }
+
+    let dt =
+        (timestamp-state.lastTime)/1000;
+
+    state.lastTime = timestamp;
+
+    dt = Math.min(dt,.05);
+
+    update(dt);
+    draw();
+
+    requestAnimationFrame(gameLoop);
+}
+
+
+/* ---------------------------------------------------------
+   START GAME
+   --------------------------------------------------------- */
+
+function startGame(mode) {
+
+    sound.init();
+
+    state.running = true;
+
+    state.mode = mode;
+
+    state.score = 0;
+    state.level = 1;
+    state.fixed = 0;
+
+    state.shields = 3;
+
+    // Give the player a moment to get ready before the first bug.
+    state.spawnTimer = mode === "tutorial" ? 2.5 : 2.0;
+
+    // Short pause after each bug is cleared; one active bug at a time
+    // prevents questions from piling on top of one another.
+    state.spawnDelay = 2.0;
+
+    state.elapsed = 0;
+
+    state.combo = 0;
+    state.comboTimer = 0;
+
+    state.powerup = null;
+    state.powerupTimer = 0;
+
+    state.waveKills = 0;
+
+    state.bullets = [];
+    state.enemies = [];
+    state.powerups = [];
+    state.particles = [];
+
+    player.x = W/2;
+    player.y = H-70;
+
+    player.cooldown = 0;
+    player.invincible = 0;
+
+    titleScreen.classList.add("hidden");
+    gameOverScreen.classList.add("hidden");
+
+    statusEl.textContent =
+        mode === "tutorial"
+            ? "SYSTEM: TRAINING MODE"
+            : "SYSTEM: SURVIVAL ACTIVE";
+
+    createStars();
+
+    updateHUD();
+
+    if (mode === "tutorial") {
+
+        speak(
+            "Welcome to Syntax Sync! Shoot the correct Python answer to patch each bug.",
+            5000
+        );
+
+    } else {
+
+        speak(
+            "Survival wave initialized. Patch bugs before they reach the mainframe!",
+            4000
+        );
+    }
+}
+
+
+/* ---------------------------------------------------------
+   GAME OVER
+   --------------------------------------------------------- */
+
+function endGame() {
+
+    if (!state.running) return;
+
+    state.running = false;
+
+    sound.playExplosion();
+
+    statusEl.textContent =
+        "SYSTEM: DEFENSES BREACHED";
+
+    document.getElementById("go-score")
+        .textContent = state.score;
+
+    document.getElementById("go-level")
+        .textContent = state.level;
+
+    document.getElementById("go-fixed")
+        .textContent = state.fixed;
+
+    let evaluation;
+
+    if (state.fixed >= 25) {
+
+        evaluation =
+            "Exceptional patching! Your Python syntax instincts are getting seriously strong.";
+
+    } else if (state.fixed >= 15) {
+
+        evaluation =
+            "Excellent work! You're becoming much faster at recognizing Python syntax.";
+
+    } else if (state.fixed >= 8) {
+
+        evaluation =
+            "Nice progress! Keep practicing loops, variables and comparison operators.";
+
+    } else {
+
+        evaluation =
+            "Good first run! Slow down and read each Python line carefully before firing.";
+
+    }
+
+    document.getElementById("go-eval")
+        .textContent = evaluation;
+
+    gameOverScreen.classList.remove("hidden");
+
+    syntaxBanner.classList.remove("show");
+}
+
+
+/* ---------------------------------------------------------
+   MENU
+   --------------------------------------------------------- */
+
+function returnToMenu() {
+
+    state.running = false;
+
+    gameOverScreen.classList.add("hidden");
+    titleScreen.classList.remove("hidden");
+
+    syntaxBanner.classList.remove("show");
+
+    statusEl.textContent =
+        "SYSTEM: NOMINAL";
+}
+
+
+/* ---------------------------------------------------------
+   KEYBOARD
+   --------------------------------------------------------- */
+
+const keys = {};
+
+window.addEventListener("keydown",event => {
+
+    const key =
+        event.key.toLowerCase();
+
+    keys[key] = true;
+
+    sound.init();
+
+    if (
+        [" ","arrowleft","arrowright",
+         "a","d","w"].includes(key)
+    ) {
+        event.preventDefault();
+    }
+
+    if (
+        (key === "w" || key === " ")
+        &&
+        state.running
+    ) {
+
+        fire();
+    }
+
+    if (key === "a" || key === "arrowleft") {
+        player.movingLeft = true;
+    }
+
+    if (key === "d" || key === "arrowright") {
+        player.movingRight = true;
+    }
+
+});
+
+
+window.addEventListener("keyup",event => {
+
+    const key =
+        event.key.toLowerCase();
+
+    keys[key] = false;
+
+    if (key === "a" || key === "arrowleft") {
+        player.movingLeft = false;
+    }
+
+    if (key === "d" || key === "arrowright") {
+        player.movingRight = false;
+    }
+
+});
+
+
+/* ---------------------------------------------------------
+   BUTTONS
+   --------------------------------------------------------- */
+
+document
+    .getElementById("btn-tutorial")
+    .addEventListener(
+        "click",
+        () => startGame("tutorial")
+    );
+
+document
+    .getElementById("btn-survival")
+    .addEventListener(
+        "click",
+        () => startGame("survival")
+    );
+
+document
+    .getElementById("btn-restart")
+    .addEventListener(
+        "click",
+        () => startGame(state.mode)
+    );
+
+document
+    .getElementById("btn-menu")
+    .addEventListener(
+        "click",
+        returnToMenu
+    );
+
+document
+    .getElementById("syntax-dismiss")
+    .addEventListener(
+        "click",
+        () => syntaxBanner.classList.remove("show")
+    );
+
+
+/* ---------------------------------------------------------
+   AUDIO
+   --------------------------------------------------------- */
+
+audioBtn.addEventListener("click",() => {
+
+    sound.enabled = !sound.enabled;
+
+    audioBtn.textContent =
+        sound.enabled
+            ? "🔊"
+            : "🔇";
+
+    if (sound.enabled) {
+        sound.init();
+    }
+});
+
+
+/* ---------------------------------------------------------
+   TOUCH CONTROLS
+   --------------------------------------------------------- */
+
+function holdButton(button,down,up) {
+
+    button.addEventListener(
+        "pointerdown",
+        event => {
+
+            event.preventDefault();
+
+            sound.init();
+
+            down();
+        }
+    );
+
+    button.addEventListener(
+        "pointerup",
+        event => {
+
+            event.preventDefault();
+
+            up();
+        }
+    );
+
+    button.addEventListener(
+        "pointercancel",
+        up
+    );
+
+    button.addEventListener(
+        "pointerleave",
+        up
+    );
+}
+
+
+holdButton(
+    document.getElementById("touch-left"),
+
+    () => {
+        player.movingLeft = true;
+    },
+
+    () => {
+        player.movingLeft = false;
+    }
+);
+
+
+holdButton(
+    document.getElementById("touch-right"),
+
+    () => {
+        player.movingRight = true;
+    },
+
+    () => {
+        player.movingRight = false;
+    }
+);
+
+
+document
+    .getElementById("touch-fire")
+    .addEventListener(
+        "pointerdown",
+        event => {
+
+            event.preventDefault();
+
+            sound.init();
+
+            fire();
+        }
+    );
+
+
+/* ---------------------------------------------------------
+   CANVAS MOUSE CONTROL
+   --------------------------------------------------------- */
+
+canvas.addEventListener(
+    "pointermove",
+    event => {
+
+        if (!state.running) return;
+
+        const rect =
+            canvas.getBoundingClientRect();
+
+        const mouseX =
+            event.clientX-rect.left;
+
+        player.x =
+            clamp(mouseX,35,W-35);
+    }
+);
+
+
+/* ---------------------------------------------------------
+   INITIALIZE
+   --------------------------------------------------------- */
+
+resizeCanvas();
+
+createStars();
+
+player.x = W/2;
+player.y = H-70;
+
+updateHUD();
+
+requestAnimationFrame(gameLoop);
+
+
+/* ---------------------------------------------------------
+   INITIAL SYN-TAX
+   --------------------------------------------------------- */
+
+setTimeout(() => {
+
+    speak(
+        "Greetings, human coder! I'm SYN-TAX. Ready to defend the mainframe?",
+        4500
+    );
+
+},500);
+
+
+/* ---------------------------------------------------------
+   TUTORIAL HELPER
+   --------------------------------------------------------- */
+
+let tutorialHintShown = false;
+
+setInterval(() => {
+
+    if (
+        state.running &&
+        state.mode === "tutorial" &&
+        !tutorialHintShown &&
+        state.elapsed > 5
+    ) {
+
+        tutorialHintShown = true;
+
+        speak(
+            "Aim your cursor underneath an answer and press SPACE. Correct answers destroy the bug.",
+            5000
+        );
+    }
+
+},500);
+
+
+/* ---------------------------------------------------------
+   EXTRA SURVIVAL DIFFICULTY
+   --------------------------------------------------------- */
+
+setInterval(() => {
+
+    if (!state.running) return;
+
+    if (
+        state.mode === "survival" &&
+        state.level >= 5
+    ) {
+
+        // Do not speed up the spawn rate at higher levels.
+        state.spawnDelay = 2.0;
+    }
+
+},3000);
+
+</script>
+
+</body>
+</html>
